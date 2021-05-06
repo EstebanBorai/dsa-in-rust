@@ -142,7 +142,7 @@ mod tests {
     }
 
     #[test]
-    fn props_a_node_from_the_list() {
+    fn pops_a_node_from_the_list() {
         let mut list = SinglyLinkedList::<String>::new();
 
         list.append(String::from("MyValue"));
