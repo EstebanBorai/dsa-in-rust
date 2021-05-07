@@ -3,10 +3,13 @@
 //! A Data Structure where each `Node` holds a pointer to the next `Node`
 use std::cell::RefCell;
 use std::fmt::Debug;
-use std::rc::Rc;
+use std::rc::{Rc, Weak};
 
 /// A `Link` to the next `Node`
 pub type Link<T> = Option<Rc<RefCell<Node<T>>>>;
+
+/// A `Link` to the previous `Node` using a `Weak` `Rc`
+pub type PreviousLink<T> = Option<Weak<RefCell<Node<T>>>>;
 
 /// A `List` `Node` holding a value of type `T` and the `Link` to the
 /// next `Node` which could be `None`
@@ -14,7 +17,7 @@ pub type Link<T> = Option<Rc<RefCell<Node<T>>>>;
 pub struct Node<T: Clone + Debug> {
     value: T,
     next: Link<T>,
-    prev: Link<T>,
+    prev: PreviousLink<T>,
 }
 
 impl<T> Node<T>
@@ -67,13 +70,14 @@ where
 
     /// Appends a value to the end (tail) of the `List`
     pub fn append(&mut self, value: T) {
-        panic!("This algorithm creates a recursive pointer when \"prev\" is assigned");
         let node = Node::new(value);
 
         match self.tail.take() {
             Some(tail_node) => {
-                tail_node.borrow_mut().next = Some(node.clone());
-                node.borrow_mut().prev = Some(tail_node);
+                node.borrow_mut().prev = Some(Rc::downgrade(&tail_node));
+
+                let mut tail_node = tail_node.borrow_mut();
+                tail_node.next = Some(Rc::clone(&node));
             }
             None => self.head = Some(Rc::clone(&node)),
         }
@@ -155,7 +159,11 @@ where
                 let current = current.borrow();
 
                 result = Some(current.value.clone());
-                current.prev.clone()
+
+                match current.prev.clone() {
+                    Some(value) => value.upgrade(),
+                    None => None,
+                }
             }
             None => None,
         };
@@ -167,103 +175,113 @@ where
 mod tests {
     use super::*;
 
-    // #[test]
-    // fn create_an_empty_singly_linked_list() {
-    //     let list = DoublyLinkedList::<String>::new();
+    #[test]
+    fn create_an_empty_singly_linked_list() {
+        let list = DoublyLinkedList::<String>::new();
 
-    //     assert!(list.head.is_none());
-    //     assert!(list.tail.is_none());
-    //     assert_eq!(list.length, 0);
-    // }
+        assert!(list.head.is_none());
+        assert!(list.tail.is_none());
+        assert_eq!(list.length, 0);
+    }
 
-    // #[test]
-    // fn appends_a_value_to_the_list() {
-    //     let mut list = DoublyLinkedList::<String>::new();
-    //     let initial_length = list.len();
+    #[test]
+    fn appends_a_value_to_the_list() {
+        let mut list = DoublyLinkedList::<String>::new();
+        let initial_length = list.len();
 
-    //     list.append(String::from("MyValue"));
+        list.append(String::from("MyValue"));
 
-    //     let head_node = list.head.clone();
-    //     let head_node_value = head_node.unwrap();
-    //     let head_node_value = head_node_value.borrow();
-    //     let head_node_value = head_node_value.peek_value();
+        let head_node = list.head.clone();
+        let head_node_value = head_node.unwrap();
+        let head_node_value = head_node_value.borrow();
+        let head_node_value = head_node_value.peek_value();
 
-    //     assert_eq!(String::from("MyValue"), *head_node_value);
-    //     assert_eq!(initial_length, 0);
-    //     assert_eq!(list.length, 1);
-    // }
+        assert_eq!(String::from("MyValue"), *head_node_value);
+        assert_eq!(initial_length, 0);
+        assert_eq!(list.length, 1);
+    }
 
-    // #[test]
-    // fn retrieves_the_list_length() {
-    //     let mut list = DoublyLinkedList::<String>::new();
+    #[test]
+    fn retrieves_the_list_length() {
+        let mut list = DoublyLinkedList::<String>::new();
 
-    //     list.append(String::from("MyValue"));
+        list.append(String::from("MyValue"));
 
-    //     assert_eq!(list.len(), 1);
-    //     assert_eq!(list.length, 1);
+        assert_eq!(list.len(), 1);
+        assert_eq!(list.length, 1);
 
-    //     list.append(String::from("MySecondValue"));
+        list.append(String::from("MySecondValue"));
 
-    //     assert_eq!(list.len(), 2);
-    //     assert_eq!(list.length, 2);
+        assert_eq!(list.len(), 2);
+        assert_eq!(list.length, 2);
 
-    //     list.append(String::from("MyLastValue"));
+        list.append(String::from("MyLastValue"));
 
-    //     assert_eq!(list.len(), 3);
-    //     assert_eq!(list.length, 3);
-    // }
+        assert_eq!(list.len(), 3);
+        assert_eq!(list.length, 3);
+    }
 
-    // #[test]
-    // fn pops_a_node_from_the_list() {
-    //     let mut list = DoublyLinkedList::<String>::new();
+    #[test]
+    fn pops_a_node_from_the_list() {
+        let mut list = DoublyLinkedList::<String>::new();
 
-    //     list.append(String::from("MyValue"));
-    //     list.append(String::from("MySecondValue"));
-    //     list.append(String::from("MyLastValue"));
+        list.append(String::from("MyValue"));
+        list.append(String::from("MySecondValue"));
+        list.append(String::from("MyLastValue"));
 
-    //     let first_element = list.pop().unwrap();
-    //     assert_eq!(list.len(), 2);
+        let first_element = list.pop().unwrap();
+        assert_eq!(list.len(), 2);
 
-    //     let second_element = list.pop().unwrap();
-    //     assert_eq!(list.len(), 1);
+        let second_element = list.pop().unwrap();
+        assert_eq!(list.len(), 1);
 
-    //     let third_element = list.pop().unwrap();
-    //     assert_eq!(list.len(), 0);
+        let third_element = list.pop().unwrap();
+        assert_eq!(list.len(), 0);
 
-    //     assert_eq!(first_element, String::from("MyValue"));
-    //     assert_eq!(second_element, String::from("MySecondValue"));
-    //     assert_eq!(third_element, String::from("MyLastValue"));
-    //     assert_eq!(list.len(), 0);
-    // }
+        assert_eq!(first_element, String::from("MyValue"));
+        assert_eq!(second_element, String::from("MySecondValue"));
+        assert_eq!(third_element, String::from("MyLastValue"));
+        assert_eq!(list.len(), 0);
+    }
 
-    // #[test]
-    // fn iterates_on_each_node() {
-    //     let mut list = DoublyLinkedList::<String>::new();
-    //     list.append(String::from("Im the first"));
-    //     list.append(String::from("Im the second!"));
-    //     list.append(String::from("Im the third"));
+    #[test]
+    fn iterates_on_each_node() {
+        let mut list = DoublyLinkedList::<String>::new();
+        list.append(String::from("Im the first"));
+        list.append(String::from("Im the second!"));
+        list.append(String::from("Im the third"));
 
-    //     let list_iterator = ListIterator::new(list.head);
-    //     let items: Vec<String> = list_iterator.collect();
+        let list_iterator = ListIterator::new(list.head);
+        let items: Vec<String> = list_iterator.collect();
 
-    //     assert_eq!(
-    //         items,
-    //         vec![
-    //             String::from("Im the first"),
-    //             String::from("Im the second!"),
-    //             String::from("Im the third")
-    //         ]
-    //     );
-    // }
+        assert_eq!(
+            items,
+            vec![
+                String::from("Im the first"),
+                String::from("Im the second!"),
+                String::from("Im the third"),
+            ]
+        );
+    }
 
-    // #[test]
-    // fn iterates_backwards() {
-    //     let mut list = DoublyLinkedList::<String>::new();
+    #[test]
+    fn iterates_backwards() {
+        let mut list = DoublyLinkedList::<String>::new();
 
-    //     list.append(String::from("Im the first"));
-    //     list.append(String::from("Im the second!"));
-    //     list.append(String::from("Im the third"));
+        list.append(String::from("Im the first"));
+        list.append(String::from("Im the second!"));
+        list.append(String::from("Im the third"));
 
-    //     println!("{:#?}", list);
-    // }
+        let list_iterator = ListIterator::new(list.tail);
+        let items: Vec<String> = list_iterator.rev().collect();
+
+        assert_eq!(
+            items,
+            vec![
+                String::from("Im the third"),
+                String::from("Im the second!"),
+                String::from("Im the first"),
+            ]
+        );
+    }
 }
