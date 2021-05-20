@@ -20,3 +20,10 @@
   ![Tests](https://github.com/EstebanBorai/data-structures-and-algorithms-with-rust/workflows/tests/badge.svg)
 
 </div>
+
+## Contents
+
+- [Doubly Linked List](./src/doubly_linked_list.rs)
+- [Dynamic Array](./src/dynamic_array.rs)
+- [Singly Linked List](./src/singly_linked_list.rs)
+- [Skip List](./src/skip_list.rs)
