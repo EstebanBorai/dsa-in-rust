@@ -17,7 +17,7 @@
   ![Build](https://github.com/EstebanBorai/data-structures-and-algorithms-with-rust/workflows/build/badge.svg)
   ![Clippy](https://github.com/EstebanBorai/data-structures-and-algorithms-with-rust/workflows/clippy/badge.svg)
   ![Fmt](https://github.com/EstebanBorai/data-structures-and-algorithms-with-rust/workflows/fmt/badge.svg)
-  ![Tests](https://github.com/EstebanBorai/data-structures-and-algorithms-with-rust/workflows/tests/badge.svg)
+  ![Tests](https://github.com/EstebanBorai/data-structures-and-algorithms-with-rust/workflows/test/badge.svg)
 
 </div>
 
