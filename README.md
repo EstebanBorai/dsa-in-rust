@@ -23,6 +23,7 @@
 
 ## Contents
 
+- [Binary Search Tree](./src/binary_search_tree.rs)
 - [Doubly Linked List](./src/doubly_linked_list.rs)
 - [Dynamic Array](./src/dynamic_array.rs)
 - [Singly Linked List](./src/singly_linked_list.rs)
